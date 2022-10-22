@@ -7,3 +7,5 @@ class SplunkVariables:
         SplunkSearchURL = "/services/search/jobs"
         SplunkAPIUser = "<Splunk API user to authenticate>" #Note that this user requires the 'api management' role and also requires access to internal and non internal indexers
         SplunkAPIpass = "<Base64 encoded splunk API user's password>" #Hard coded password, I know! I know! :(
+        Proxy_host = "<zproxy.company.net>"
+        Proxy_port = 80

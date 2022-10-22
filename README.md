@@ -12,3 +12,4 @@ The additional features of this python implementation are:
 - Multiple CSV file uploads
 - Auto header extraction
 - Error handling on parsing of CSV files
+- Apply proxy if needed
