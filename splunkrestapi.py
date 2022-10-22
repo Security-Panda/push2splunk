@@ -4,6 +4,7 @@ import urllib
 import httplib2
 from xml.dom import minidom
 import base64
+import re
 
 class SplunkAPISearch:
     def __init__(self):
@@ -12,12 +13,15 @@ class SplunkAPISearch:
         self.SplunkSearchURL = SplunkVariables.SplunkSearchURL
         self.apiuser = SplunkVariables.SplunkAPIUser
         self.apipass = SplunkVariables.SplunkAPIpass
+        self.proxy_host = SplunkVariables.Proxy_host
+        self.proxy_port = SplunkVariables.Proxy_port
         self.searchQuery = []
         self.ServerContent = ""
         self.sessionKey = ""
         self.AuthenticateToSplunk()
     
     def DoSearchOnSplunk(self,SplunkSearch):
+        """output table to lookup by splunk search"""
         try:
             self.searchQuery = SplunkSearch
         except:
@@ -34,7 +38,7 @@ class SplunkAPISearch:
                     search = 'search ' + search
                 # Do the Search
                 try:
-                    httplib2.Http(disable_ssl_certificate_validation=True).request(self.SplunkBaseURL + self.SplunkSearchURL,'POST',headers={'Authorization': 'Splunk %s' % self.sessionKey},body=urllib.parse.urlencode({'search': search}))[1]
+                    self.http.request(self.SplunkBaseURL + self.SplunkSearchURL,'POST',headers={'Authorization': 'Splunk %s' % self.sessionKey},body=urllib.parse.urlencode({'search': search}))[1]
                 except:
                     logging.error("error in http request to search on Splunk")
                     exit(1)                
@@ -43,11 +47,18 @@ class SplunkAPISearch:
             exit(1)
     
     def AuthenticateToSplunk(self):
+        """Authenticate the connection to splunk. Get the seesion key"""
+        not_use_proxy = re.search(r'localhost', self.SplunkBaseURL)
+        temp = base64.b64decode(self.apipass)
+        temp = str(temp,"utf-8")
+        proxy_info = httplib2.ProxyInfo(httplib2.socks.PROXY_TYPE_HTTP, self.proxy_host, self.proxy_port)
+        if not_use_proxy is None:
+            self.http = httplib2.Http(proxy_info = proxy_info, disable_ssl_certificate_validation=True)
+        else:
+            self.http = httplib2.Http(disable_ssl_certificate_validation=True)
         try:
-            temp = base64.b64decode(self.apipass)
-            temp = str(temp,"utf-8")
-            self.ServerContent = httplib2.Http(disable_ssl_certificate_validation=True).request(self.SplunkBaseURL + '/services/auth/login',
-    'POST', headers={}, body=urllib.parse.urlencode({'username':self.apiuser, 'password':temp}))[1]
+            self.ServerContent = self.http.request(self.SplunkBaseURL + '/services/auth/login',
+                                'POST', headers={}, body=urllib.parse.urlencode({'username':self.apiuser, 'password':temp}))[1]
         except:
             logging.error("Cannot authenticate with SplunkCloud")
             exit(1)
